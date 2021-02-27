@@ -1,4 +1,5 @@
 typealias LOP = LinearOptimizationProblem
+
 /// A object to describe a linar optimization problem in normal form
 ///
 /// Describes a LOP of the form
@@ -113,26 +114,26 @@ func linprog<F: FloatLike>(
     
     // Fill Axy=b matrix
     if p.A.rows != 0 {
-        mat[0..<p.b.rows, n...n] = p.b
-        mat[0..<p.A.rows, 0..<p.A.cols] = p.A
+        mat[0..., n...] = p.b
+        mat[0..., 0...] = p.A
     }
     
     // Fill Aeqx=beq matrix
     if p.Aeq.rows != 0 {
-        mat[p.b.rows..<numberOfEq, n...n] = p.beq
-        mat[p.A.rows..<numberOfEq, 0..<p.Aeq.cols] = p.Aeq
+        mat[p.b.rows..., n...] = p.beq
+        mat[p.A.rows..., 0...] = p.Aeq
     }
     
     
     // Fill c matrix of (P)
-    mat[(numberOfEq + 1)...(numberOfEq + 1), 0..<n] = -1*(%p.c)
+    mat[(numberOfEq + 1)..., 0...] = -1*(%p.c)
     // Fille c matrix of (H)
     var ch = Matrix<F>(n + 1, 1)
     for o in p.A.rows..<numberOfEq {
         ch = ch + (%mat[o...o, 0..<mat.cols])
     }
     
-    mat[numberOfEq...numberOfEq, 0..<ch.rows] = %ch
+    mat[numberOfEq..., 0...] = %ch
     
     // Note vars
     var baseVars = Array(1...n)
@@ -264,7 +265,7 @@ func linprog<F: FloatLike>(
     for col in 0..<mat.cols {
         guard col == mat.cols - 1 || baseVars[col] < (numberOfVars - p.Aeq.rows) else { continue }
         
-        mx[0..<numberOfEq, colIdx...colIdx] = mat[0..<numberOfEq, col...col]
+        mx[0..., colIdx...] = mat[0..<numberOfEq, col...col]
         mx[numberOfEq, colIdx] = mat[numberOfEq + 1, col]
         
         colIdx += 1

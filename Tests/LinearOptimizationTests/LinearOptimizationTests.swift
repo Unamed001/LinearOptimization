@@ -7,9 +7,6 @@ final class LinearOptimizationTests: XCTestCase {
         // Use XCTAssert and related functions to verify your tests produce the correct
         // results.
         
-        self.lop1()
-        self.lop2()
-        self.lop3()
     }
     
     func lop3() {
