@@ -7,20 +7,34 @@ final class LinearOptimizationTests: XCTestCase {
         // Use XCTAssert and related functions to verify your tests produce the correct
         // results.
         
+        let matrix = Matrix<Float>([
+            [ 0, 2, -2 ],
+            [ 2, 4, -1 ],
+            [ 9, -1, 3 ],
+        ])
+        
+        print(Gauß.ireduce(matrix))
+        print(Gauß.reduce(matrix))
+        
+        print(Gauß.det(matrix), Matrix.det(matrix))
+        
+        self.lop1()
+        self.lop2()
+        self.lop3()
     }
     
     func lop3() {
         let lop = LOP<Double>(
-            c: .init([ 8, 8, -9, 0, 0 ]),
+            c: .init(vector: [ 8, 8, -9, 0, 0 ]),
             A: .init([
                 [ 1, 1, 1, 0, 0 ],
             ]),
-            b: .init([ 1 ]),
+            b: .init(vector: [ 1 ]),
             Aeq: .init([
                 [ 2, 4, 1, -1, 0 ],
                 [ 1, -1, -1, 0, -1 ]
             ]),
-            beq: .init([ 8, 2 ])
+            beq: .init(vector: [ 8, 2 ])
         )
         
         guard case .Error(_) = linprog(lop, .init(verbose: false)) else {
@@ -31,16 +45,16 @@ final class LinearOptimizationTests: XCTestCase {
     
     func lop2() {
         let lop = LOP<Double>(
-            c: .init([ 1, -3, 2, 0, 0 ]),
+            c: .init(vector: [ 1, -3, 2, 0, 0 ]),
             A: .init([
                 [ 1, 0, -1, 0, 0 ]
             ]),
-            b: .init([ 4 ]),
+            b: .init(vector: [ 4 ]),
             Aeq: .init([
                 [ 1, -1, 0, -1, 0 ],
                 [ 0, 1, -2, 0, -1 ]
             ]),
-            beq: .init([ 1, 1 ])
+            beq: .init(vector: [ 1, 1 ])
         )
         
         guard case .Ok(let r) = linprog(lop, .init(verbose: false)) else {
@@ -48,23 +62,23 @@ final class LinearOptimizationTests: XCTestCase {
             return
         }
         
-        XCTAssertEqual(r.x[0...2, 0...0], Matrix<Double>([ 6, 5, 2 ]))
+        XCTAssertEqual(r.x[0...2, 0...0], Matrix<Double>(vector: [ 6, 5, 2 ]))
         XCTAssertEqual(r.fval, -5.0)
     }
 
     func lop1() {
         
         let lop = LOP<Double>(
-            c: .init([ 4, -2, -5, 0 ]),
+            c: .init(vector: [ 4, -2, -5, 0 ]),
             A: .init([
                 [ -5, 2, 9, 0 ],
                 [ -2, 1, 4, 0 ]
             ]),
-            b: .init([ 2, 1 ]),
+            b: .init(vector: [ 2, 1 ]),
             Aeq: .init([
                 [ -13, 7, 27, -1 ]
             ]),
-            beq: .init([ 3 ])
+            beq: .init(vector: [ 3 ])
         )
         
         guard case .Ok(let r) = linprog(lop, .init(verbose: false)) else {
@@ -72,7 +86,7 @@ final class LinearOptimizationTests: XCTestCase {
             return
         }
         
-        XCTAssertEqual(r.x[0...2, 0...0], Matrix<Double>([ 0, 1, 0]))
+        XCTAssertEqual(r.x[0...2, 0...0], Matrix(vector: [ 0, 1, 0 ]))
         XCTAssertEqual(r.fval, -2.0)
     }
     
