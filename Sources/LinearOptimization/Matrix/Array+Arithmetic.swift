@@ -100,5 +100,3 @@ extension Array where Element: Comparable {
         return true
     }
 }
-
-

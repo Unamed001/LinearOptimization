@@ -1,6 +1,13 @@
-typealias LOP = LinearOptimizationProblem
+//
+//  LinearOptimization.swift
+//  LinearOptimization
+//
+//  Created by MK_Dev on 7.03.21.
+//
 
-/// A object to describe a linar optimization problem in normal form
+import Swift
+
+/// A object to describe a linar optimization problem in normal form.
 ///
 /// Describes a LOP of the form
 /// ```
@@ -10,14 +17,15 @@ typealias LOP = LinearOptimizationProblem
 /// ```
 struct LinearOptimizationProblem<F: FloatLike> {
     
+    /// Options to control the linprog execution.
     struct Options {
         var verbose: Bool = true
         var maxIterations: Int = 8
     }
     
+    /// A result of a linprog execution.
     enum Result {
         typealias Element = (x: Matrix<F>, fval: F)
-        
         case Ok(Element)
         case Error(String)
     }
@@ -96,11 +104,24 @@ struct LinearOptimizationProblem<F: FloatLike> {
     }
 }
 
+/// A object to describe a linar optimization problem in normal form.
+///
+/// Describes a LOP of the form
+/// ```
+/// min c^t*x + l
+/// with A * x <= b, Aeq * x = beq
+///     and x >= 0
+/// ```
+typealias LOP = LinearOptimizationProblem
 
 func linprog<F: FloatLike>(
     _ p: LOP<F>,
     _ opts: LOP<F>.Options = LOP<F>.Options()
 ) -> LOP<F>.Result {
+    
+   
+    
+    // Check LOP consistency
     assert(p.c.isVec)
     assert(p.A.rows == p.b.rows)
     assert(p.A.cols == p.c.rows || p.A.rows == 0)
@@ -110,6 +131,7 @@ func linprog<F: FloatLike>(
     let n = p.c.rows
     let numberOfVars = n + p.A.rows + p.Aeq.rows
     let numberOfEq = p.A.rows + p.Aeq.rows
+    
     var mat = Matrix<F>(numberOfEq + 2, n + 1)
     
     // Fill Axy=b matrix
@@ -126,20 +148,21 @@ func linprog<F: FloatLike>(
     
     
     // Fill c matrix of (P)
-    mat[(numberOfEq + 1)..., 0...] = -1*(%p.c)
+    mat[(numberOfEq + 1)..., 0...] = -1*p.c′
     // Fille c matrix of (H)
     var ch = Matrix<F>(n + 1, 1)
     for o in p.A.rows..<numberOfEq {
-        ch = ch + (%mat[o...o, 0..<mat.cols])
+        ch = ch + (mat[o...o, 0..<mat.cols]′)
     }
     
-    mat[numberOfEq..., 0...] = %ch
+    // Fill bottom rows of orignal ch matrix of help problem
+    mat[numberOfEq..., 0...] = ch′
     
-    // Note vars
+    // Mar which vars are base indices or not
     var baseVars = Array(1...n)
     var nonBaseVars = Array((n + 1)...numberOfVars)
     
-    
+    /// Loggin method
     func log(
         _ iteration: Int,
         _ matrix: Matrix<F>,
@@ -176,8 +199,7 @@ func linprog<F: FloatLike>(
     }
     
     // Phase 1
-    
-    func getPivot() -> (Int,Int)? {
+    func getPivotPhase1() -> (Int,Int)? {
         var colSelect: F = .infinity
         var pvCol: Int?
         
@@ -208,13 +230,19 @@ func linprog<F: FloatLike>(
         return (pvRow!, pvCol!)
     }
     
-    
+    // Phase 1 Iteration
+    var p1HashList = [Int]()
     var p1Itr = 0
-    while let (pvRow, pvCol) = getPivot() {
+    while let (pvRow, pvCol) = getPivotPhase1() {
         guard p1Itr < opts.maxIterations else {
             return .Error("Exceeded phase 1 max iterations")
         }
         p1Itr += 1
+        
+        guard !p1HashList.contains(mat.customHashValue) else {
+            return .Error("Phase 1 Cycle found")
+        }
+        p1HashList.append(mat.customHashValue)
         
         log(p1Itr, mat, true, pvRow, pvCol)
         
@@ -252,12 +280,11 @@ func linprog<F: FloatLike>(
     }
     
     let helpVar = numberOfVars - p.Aeq.rows + 1
-    
     guard nonBaseVars.reduce(0, { max($0, $1) }) < helpVar else {
         return .Error("Problem (H) is unbound")
     }
     
-    // Reduce to Phase 2
+    // Phae 1
     
     var mx = Matrix<F>(numberOfEq + 1, n + 1 - p.Aeq.rows)
     
@@ -271,7 +298,9 @@ func linprog<F: FloatLike>(
         colIdx += 1
     }
     
-    func getPivot2() -> (Int, Int)? {
+    baseVars = baseVars.filter({ $0 < numberOfVars - p.Aeq.rows })
+    
+    func getPivotPhase2() -> (Int, Int)? {
         var colSelect: F = .infinity
         var pvCol: Int?
         
@@ -302,15 +331,20 @@ func linprog<F: FloatLike>(
         return (pvRow!, pvCol!)
     }
     
-    baseVars = baseVars.filter({ $0 < numberOfVars - p.Aeq.rows })
-    
+    // Phase 2 Iteration
+    var p2HashList = [Int]()
     var p2Itr = 0
-    while let (pvRow, pvCol) = getPivot2() {
+    while let (pvRow, pvCol) = getPivotPhase2() {
         
         guard p2Itr < opts.maxIterations else {
             return .Error("Exceeded phase 2 max iterations")
         }
         p2Itr += 1
+        
+        guard !p2HashList.contains(mx.customHashValue) else {
+            return .Error("Phase 2 Cycle found")
+        }
+        p2HashList.append(mx.customHashValue)
         
         log(p2Itr, mx, false, pvRow, pvCol)
         

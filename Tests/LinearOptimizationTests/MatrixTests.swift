@@ -167,8 +167,15 @@ final class MatrixTests: XCTestCase {
             }
             
             let mat = Matrix(array, n, n)
-//            print(Gauß.det(mat), Matrix.det(mat))
-            XCTAssert(Gauß.det(mat) - Matrix.det(mat) < 0.1)
+            XCTAssert(Gaussian.det(mat) - Matrix.det(mat) < 0.1)
         }
+    }
+    
+    func test_addition() {
+        
+        let m1 = Matrix(vector: [ 1, 2, 3 ])
+        let m2 = Matrix(vector: [ 1, 2, 3 ])
+        
+        XCTAssert(m1 + m2 == Matrix(vector: [2,4,6]))
     }
 }

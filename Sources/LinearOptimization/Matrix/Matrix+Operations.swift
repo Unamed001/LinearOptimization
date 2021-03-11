@@ -68,6 +68,63 @@ extension Matrix where Element: AdditiveArithmetic {
     }
     
     ///
+    /// Adds up the given vectors (row-wise) according to the
+    /// addition operator defined in the `Element` type.
+    ///
+    public static func + (_ lhs: Matrix, _ rhs: Matrix) -> Matrix {
+        return Matrix.add(lhs, rhs)
+    }
+    
+    ///
+    /// Adds up the given vectors (row-wise) according to the
+    /// addition operator defined in the `Element` type.
+    ///
+    public static func += (_ lhs: inout Matrix, _ rhs: Matrix) {
+        lhs = Matrix.add(lhs, rhs)
+    }
+    
+    ///
+    /// Subtracts the given vectors (row-wise) according to the
+    /// addition operator defined in the `Element` type.
+    ///
+    /// - parameter lhs: A vector to be added.
+    /// - parameter rhs: Another vector to be added.
+    ///
+    /// - returns:
+    /// A new vector containing the (row-wise) added values
+    /// of the input parameters.
+    ///
+    /// This operation can only be performed on Vectors (single-col matrices)
+    /// otherwise the function will fail an assertion.
+    ///
+    public static func sub(_ lhs: Matrix, _ rhs: Matrix) -> Matrix {
+        assert(lhs.isVec && rhs.isVec || lhs.isColVec == rhs.isColVec, "Cannot use addition on matrices")
+        assert(lhs.rows == rhs.rows && lhs.cols == rhs.cols)
+        
+        var ret = lhs
+        for i in 0..<rhs.rows {
+            ret[i, 0] -= rhs[i, 0]
+        }
+        return ret
+    }
+    
+    ///
+    /// Subtracts the given vectors (row-wise) according to the
+    /// addition operator defined in the `Element` type.
+    ///
+    public static func - (_ lhs: Matrix, _ rhs: Matrix) -> Matrix {
+        return Matrix.sub(lhs, rhs)
+    }
+    
+    ///
+    /// Subtracts the given vectors (row-wise) according to the
+    /// addition operator defined in the `Element` type.
+    ///
+    public static func -= (_ lhs: inout Matrix, _ rhs: Matrix) {
+        lhs = Matrix.sub(lhs, rhs)
+    }
+    
+    ///
     /// Returns the trace of the given matrix (often referred as tr(A))
     /// assuming the matrix is a square matrix.
     ///
@@ -159,51 +216,19 @@ extension Matrix where Element: Numeric  {
     }
 }
 
-extension Matrix where Element: FloatingPoint {
-    ///
-    /// Returns numeric value characterising the type of a quadratic matrix.
-    ///
-    /// - parameter matrix: The matrix to be characterised.
-    ///
-    /// - returns:
-    /// A numeric value of type `Element` describing the type of the matrix.
-    ///
-    /// The determinant describe certain Characteristics of the given matrix
-    /// (e.g. orthogonal matrices have det(M) = ±1).
-    /// This variant used the Lapace-Expansion algorithm
-    /// to calculate the determinant.
-    ///
-    public static func fdet(_ matrix: Matrix) -> Element {
-        assert(matrix.isSquare, "Invalid matrix at det(M) call. Expected square matrix.")
-        let diag = Gauß._diagonalize(matrix)
-        var sum = Element(1)
-        for i in 0..<diag.rows {
-            sum *= diag[i, i]
-        }
-        return sum
-    }
-    
-    /// A numeric value characterising the type of a quadratic matrix.
-    @inlinable
-    var fdeterminant: Element {
-        return Matrix.fdet(self)
-    }
-}
-
 infix operator *: MultiplicationPrecedence
 public func * <Element: Numeric>
     (_ lhs: Element, _ rhs: Matrix<Element>) -> Matrix<Element> {
     return Matrix<Element>.skalar(lhs, rhs)
 }
 
-infix operator +: AdditionPrecedence
-public func + <Element: AdditiveArithmetic>
-    (_ lhs: Matrix<Element>, _ rhs: Matrix<Element>) -> Matrix<Element> {
-    return Matrix<Element>.add(lhs, rhs)
-}
-
 prefix operator %
 public prefix func % <Element: AdditiveArithmetic>
     (_ operand: Matrix<Element>) -> Matrix<Element> {
     return Matrix<Element>.transpose(operand)
+}
+
+postfix operator ′
+public postfix func ′<Element>(_ operand: Matrix<Element>) -> Matrix<Element> {
+    return Matrix.transpose(operand)
 }

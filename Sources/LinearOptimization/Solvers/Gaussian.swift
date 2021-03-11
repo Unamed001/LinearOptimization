@@ -7,7 +7,7 @@
 
 import Accelerate
 
-enum Gauß {
+enum Gaussian {
 
     // MARK: - Transpose
     
@@ -67,7 +67,7 @@ enum Gauß {
     public static func det(_ matrix: Matrix<Float>) -> Float {
         assert(matrix.isSquare, "det(A) requires A to be a square matrix")
         var matrix = matrix
-        let swaps = Gauß.reduce(&matrix)
+        let swaps = Gaussian.reduce(&matrix)
         var d: Float = (swaps % 2 == 0) ? 1 : -1
         for idx in 0..<matrix.rows {
             d *= matrix[idx, idx]
@@ -84,7 +84,7 @@ enum Gauß {
     public static func det(_ matrix: Matrix<Double>) -> Double {
         assert(matrix.isSquare, "det(A) requires A to be a square matrix")
         var matrix = matrix
-        let swaps = Gauß.reduce(&matrix)
+        let swaps = Gaussian.reduce(&matrix)
         var d: Double = (swaps % 2 == 0) ? 1 : -1
         for idx in 0..<matrix.rows {
             d *= matrix[idx, idx]
@@ -107,7 +107,7 @@ enum Gauß {
     ///
     public static func reduce(_ matrix: Matrix<Float>, _ cols: Int? = nil) -> Matrix<Float> {
         var matrix = matrix
-        Gauß.reduce(&matrix, cols)
+        Gaussian.reduce(&matrix, cols)
         return matrix
     }
     
@@ -125,7 +125,7 @@ enum Gauß {
     @discardableResult
     public static func reduce(_ matrix: inout Matrix<Float>, _ cols: Int? = nil) -> Int {
         // Reduce matrix into implicte form
-        Gauß.ireduce(&matrix, cols)
+        Gaussian.ireduce(&matrix, cols)
         
         // The number of line swaps (real ones) needed normalize.
         var swaps = 0
@@ -145,22 +145,10 @@ enum Gauß {
             guard sRow != row else { continue }
           
             matrix.data.withUnsafeMutableBufferPointer { (ptr) in
-                vDSP_mmov(
-                    ptr.baseAddress! + (sRow*matrix.cols),
-                    &tempBuffer,
-                    1, vDSP_Length(matrix.cols), 1, 1
-                )
-                
-                vDSP_mmov(
-                    ptr.baseAddress! + (sRow*matrix.cols),
-                    ptr.baseAddress! + (row*matrix.cols),
-                    1, vDSP_Length(matrix.cols), 1, 1
-                )
-                
-                vDSP_mmov(
-                    tempBuffer,
-                    ptr.baseAddress! + (row*matrix.cols),
-                    1, vDSP_Length(matrix.cols), 1, 1
+                vDSP_vswap(
+                    ptr.baseAddress! + (sRow*matrix.cols), 1,
+                    ptr.baseAddress! + (row*matrix.cols), 1,
+                    vDSP_Length(matrix.cols)
                 )
             }
         }
@@ -181,7 +169,7 @@ enum Gauß {
     ///
     public static func reduce(_ matrix: Matrix<Double>, _ cols: Int? = nil) -> Matrix<Double> {
         var matrix = matrix
-        Gauß.reduce(&matrix, cols)
+        Gaussian.reduce(&matrix, cols)
         return matrix
     }
     
@@ -199,7 +187,7 @@ enum Gauß {
     @discardableResult
     public static func reduce(_ matrix: inout Matrix<Double>, _ cols: Int? = nil) -> Int {
         // Reduce matrix into implicte form
-        Gauß.ireduce(&matrix, cols)
+        Gaussian.ireduce(&matrix, cols)
         
         // The number of line swaps (real ones) needed normalize.
         var swaps = 0
@@ -219,22 +207,10 @@ enum Gauß {
             guard sRow != row else { continue }
           
             matrix.data.withUnsafeMutableBufferPointer { (ptr) in
-                vDSP_mmovD(
-                    ptr.baseAddress! + (sRow*matrix.cols),
-                    &tempBuffer,
-                    1, vDSP_Length(matrix.cols), 1, 1
-                )
-                
-                vDSP_mmovD(
-                    ptr.baseAddress! + (sRow*matrix.cols),
-                    ptr.baseAddress! + (row*matrix.cols),
-                    1, vDSP_Length(matrix.cols), 1, 1
-                )
-                
-                vDSP_mmovD(
-                    tempBuffer,
-                    ptr.baseAddress! + (row*matrix.cols),
-                    1, vDSP_Length(matrix.cols), 1, 1
+                vDSP_vswapD(
+                    ptr.baseAddress! + (sRow*matrix.cols), 1,
+                    ptr.baseAddress! + (row*matrix.cols), 1,
+                    vDSP_Length(matrix.cols)
                 )
             }
         }
@@ -258,7 +234,7 @@ enum Gauß {
     ///
     public static func ireduce(_ matrix: Matrix<Float>, _ cols: Int? = nil) -> Matrix<Float> {
         var matrix = matrix
-        Gauß.ireduce(&matrix, cols)
+        Gaussian.ireduce(&matrix, cols)
         return matrix
     }
     
@@ -334,7 +310,7 @@ enum Gauß {
     ///
     public static func ireduce(_ matrix: Matrix<Double>, _ cols: Int? = nil) -> Matrix<Double> {
         var matrix = matrix
-        Gauß.ireduce(&matrix, cols)
+        Gaussian.ireduce(&matrix, cols)
         return matrix
     }
     
@@ -395,156 +371,5 @@ enum Gauß {
                 }
             }
         }
-    }
-    
-    // MARK: - Deprecated
-    
-    static func _diagonalize<Element: FloatingPoint>(_ matrix: Matrix<Element>) -> Matrix<Element> {
-        assert(matrix.rows <= matrix.cols, "Requires a square matrix or more cols than rows")
-        
-        var mat = matrix
-        for n in 0..<matrix.rows {
-            let anchor = mat[n, n]
-            assert(anchor != 0)
-            
-            guard n + 1 != mat.rows else { break }
-            for i in (n + 1)..<mat.rows {
-                
-                let factor =  mat[i, n] / anchor
-                for c in 0..<mat.cols {
-                    mat[i, c] -= factor * mat[n, c]
-                }
-            }
-            
-        }
-        
-        return mat
-    }
-    
-    static func diagonalize<Element: SignedInteger>(_ matrix: Matrix<Element>) -> Matrix<Element> {
-        assert(matrix.rows <= matrix.cols, "Requires a square matrix or more cols than rows")
-        
-        var mat = matrix
-        for n in 0..<matrix.rows {
-            var anchor = mat[n, n]
-            guard n + 1 != mat.rows else { break }
-            
-            if anchor == 0 {
-                for i in (n + 1)..<mat.rows {
-                    if mat[i, n] != 0 {
-                        let temp = mat[n, 0...]
-                        mat[n, 0...] = mat[i, 0...]
-                        mat[i, 0...] = temp
-                        anchor = mat[n,n]
-                        break
-                    }
-                }
-                
-                assert(anchor != 0, "Zero")
-            }
-            
-            
-            for i in (n + 1)..<mat.rows {
-                
-                let factor =  mat[i, n] / anchor
-                for c in 0..<mat.cols {
-                    mat[i, c] -= factor * mat[n, c]
-                }
-            }
-            
-        }
-        
-        return mat
-    }
-    
-    
-    static func solve<Element: FloatingPoint>(_ matrix: Matrix<Element>) -> Matrix<Element>  {
-        
-        var mat = matrix
-        
-        var currentRow = 0
-        var currentCol = 0
-        
-        var anchor: (row: Int, col: Int)
-        
-        while currentCol < mat.cols && currentRow < mat.rows {
-            
-            
-            while mat[currentRow, currentCol] == .zero {
-                currentCol += 1
-                if currentCol == mat.cols {
-                    return mat
-                }
-            }
-            
-            anchor = (currentRow, currentCol)
-            
-            let anchorVal = mat[anchor.row, anchor.col]
-            if anchorVal != 1 {
-                for i in 0..<mat.cols {
-                    mat[anchor.row, i] /= anchorVal
-                }
-            }
-            
-            for rowIdx in (anchor.row + 1)..<mat.rows {
-                // Calculate OldRow - PivotElement * PivotRow
-                guard mat[rowIdx, anchor.col] != 0 else { continue }
-                
-                mat[rowIdx..., 0...] = %Matrix.add(
-                    -1 * mat[rowIdx, anchor.col
-                        ] * %mat[anchor.row...anchor.row, 0..<mat.cols],
-                    %mat[rowIdx...rowIdx, 0..<mat.cols]
-                )
-            }
-            
-            currentRow += 1
-        }
-        
-        return mat
-    }
-    
-    static func solve<Element: SignedInteger>(_ matrix: Matrix<Element>) -> Matrix<Element>  {
-        
-        var mat = matrix
-        
-        var currentRow = 0
-        var currentCol = 0
-        
-        var anchor: (row: Int, col: Int)
-        
-        while currentCol < mat.cols && currentRow < mat.rows {
-            
-            
-            while mat[currentRow, currentCol] == .zero {
-                currentCol += 1
-                if currentCol == mat.cols {
-                    return mat
-                }
-            }
-            
-            anchor = (currentRow, currentCol)
-            
-            let anchorVal = mat[anchor.row, anchor.col]
-            if anchorVal != 1 {
-                for i in 0..<mat.cols {
-                    mat[anchor.row, i] /= anchorVal
-                }
-            }
-            
-            for rowIdx in (anchor.row + 1)..<mat.rows {
-                // Calculate OldRow - PivotElement * PivotRow
-                guard mat[rowIdx, anchor.col] != 0 else { continue }
-                
-                mat[rowIdx..., 0...] = %Matrix.add(
-                    -1 * mat[rowIdx, anchor.col
-                        ] * %mat[anchor.row...anchor.row, 0..<mat.cols],
-                    %mat[rowIdx...rowIdx, 0..<mat.cols]
-                )
-            }
-            
-            currentRow += 1
-        }
-        
-        return mat
     }
 }

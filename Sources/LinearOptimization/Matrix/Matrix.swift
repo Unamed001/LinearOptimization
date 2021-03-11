@@ -208,9 +208,16 @@ extension Matrix where Element: AdditiveArithmetic {
 
 // MARK: - Derived Protocols
 extension Matrix: Equatable where Element: Equatable {}
-extension Matrix: Hashable where Element: Hashable {}
 extension Matrix: Encodable where Element: Encodable {}
 extension Matrix: Decodable where Element: Decodable {}
+
+extension Matrix: Hashable where Element: Hashable {
+    public var customHashValue: Int {
+        var hasher = Hasher()
+        hasher.combine(self)
+        return hasher.finalize()
+    }
+}
 
 extension Matrix: Sequence {
     
