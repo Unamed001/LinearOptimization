@@ -7,6 +7,7 @@
 
 import Accelerate
 
+/// A collection of gaussian operations.
 enum Gaussian {
 
     // MARK: - Transpose
@@ -131,8 +132,6 @@ enum Gaussian {
         var swaps = 0
         // The current row to be fixed
         var sRow = 0
-        // Buffer for using vDSP vector operations
-        var tempBuffer = [Float](repeating: .nan, count: matrix.cols)
         
         // Fix based on pivot element top to bottom
         for col in 0..<(cols ?? matrix.cols) {
@@ -144,6 +143,8 @@ enum Gaussian {
             defer { sRow += 1 }
             guard sRow != row else { continue }
           
+            swaps += 1
+            
             matrix.data.withUnsafeMutableBufferPointer { (ptr) in
                 vDSP_vswap(
                     ptr.baseAddress! + (sRow*matrix.cols), 1,
@@ -193,8 +194,6 @@ enum Gaussian {
         var swaps = 0
         // The current row to be fixed
         var sRow = 0
-        // Buffer for using vDSP vector operations
-        var tempBuffer = [Double](repeating: .nan, count: matrix.cols)
         
         // Fix based on pivot element top to bottom
         for col in 0..<(cols ?? matrix.cols) {
@@ -206,6 +205,8 @@ enum Gaussian {
             defer { sRow += 1 }
             guard sRow != row else { continue }
           
+            swaps += 1
+            
             matrix.data.withUnsafeMutableBufferPointer { (ptr) in
                 vDSP_vswapD(
                     ptr.baseAddress! + (sRow*matrix.cols), 1,

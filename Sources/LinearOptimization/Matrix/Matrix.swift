@@ -13,7 +13,7 @@ import Swift
 /// A matrix is a two-dimensional collection of elements supporting
 /// any type avaiable.
 ///
-/// ```
+/// ```swift
 /// let matrix = Matrix<String>([
 ///     [ "Hi", "This", "Is" ],
 ///     [ "A", "Matrix", "That" ],
@@ -26,7 +26,7 @@ import Swift
 /// added to the struct, including typical operations on number
 /// based matrices.
 ///
-/// ```
+/// ```swift
 /// let mt = Matrix<Int>([
 ///     [ 1, 3 ],
 ///     [ 3, -4]
@@ -212,6 +212,18 @@ extension Matrix: Encodable where Element: Encodable {}
 extension Matrix: Decodable where Element: Decodable {}
 
 extension Matrix: Hashable where Element: Hashable {
+    ///
+    /// The hash value.
+    ///
+    /// Hash values are not guaranteed to be equal across different
+    /// executions of your program. Do not save hash values to use
+    /// during a future execution.
+    ///
+    /// - important:
+    /// `hashValue` is deprecated as a Hashable requirement.
+    /// Since `hashValue` is deprecated but not removed, `customHashValue`
+    /// has a weird name.
+    ///
     public var customHashValue: Int {
         var hasher = Hasher()
         hasher.combine(self)
@@ -325,7 +337,7 @@ extension Matrix where Element: Comparable {
 // MARK: - Subscripts
 extension Matrix {
     ///
-    /// Refrences a element at the given index pair.
+    /// Refernces a element at the given index pair.
     ///
     /// - parameter row: The row index of the referenced element.
     /// - parameter col: The colum index of the referenced element.
@@ -343,6 +355,13 @@ extension Matrix {
         }
     }
     
+    ///
+    /// References a specific submatrix in the parent matrix,
+    /// using the given range expressions to determine indices.
+    ///
+    /// - parameter rows: The row indices clamping the submatrix.
+    /// - parameter cols: The colum indices clamping the submatrix.
+    ///
     @inlinable
     public subscript
         <L: ClosableRangeExpression, R: ClosableRangeExpression>

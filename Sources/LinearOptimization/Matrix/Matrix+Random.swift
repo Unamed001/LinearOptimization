@@ -8,7 +8,6 @@
 import Swift
 
 extension Matrix {
-    
     ///
     /// Creates a new matrix filled with random values from
     /// the collection.
@@ -22,20 +21,27 @@ extension Matrix {
         self.data.reserveCapacity(rows*cols)
         self.rows = rows
         self.cols = cols
-        
-        
-        
         for _ in 0..<rows*cols {
             self.data.append(collection.randomElement()!)
         }
     }
 }
 
+/// A type that can be created using a range limited randomizer.
 protocol RandomInitializable: Comparable {
+    /// A function that creates an instance limited by a closed range.
     @inlinable static func random(in range: ClosedRange<Self>) -> Self
+    
+    /// A function that creates an instance limited by a closed range
+    /// using a given generator.
     @inlinable static func random<T>(in range: ClosedRange<Self>, using generator: inout T) -> Self
         where T: RandomNumberGenerator
+    
+    /// A function that creates an instance limited by a open range.
     @inlinable static func random(in range: Range<Self>) -> Self
+    
+    /// A function that creates an instance limited by a open range
+    /// using a given generator.
     @inlinable static func random<T>(in range: Range<Self>, using generator: inout T) -> Self
         where T: RandomNumberGenerator
 }

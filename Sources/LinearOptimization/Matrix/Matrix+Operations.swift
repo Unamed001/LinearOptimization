@@ -214,20 +214,24 @@ extension Matrix where Element: Numeric  {
         }
         return mat
     }
+    
+    ///
+    /// Mutiplies the given skalar value with the matrix(element-wise) according to the
+    /// mutiplication operator defined in the `Element` type.
+    ///
+    public static func * (_ lhs: Element, _ rhs: Matrix<Element>) -> Matrix<Element> {
+        return Matrix.skalar(lhs, rhs)
+    }
 }
 
-infix operator *: MultiplicationPrecedence
-public func * <Element: Numeric>
-    (_ lhs: Element, _ rhs: Matrix<Element>) -> Matrix<Element> {
-    return Matrix<Element>.skalar(lhs, rhs)
-}
-
+/// Prefix transpose operator.
 prefix operator %
 public prefix func % <Element: AdditiveArithmetic>
     (_ operand: Matrix<Element>) -> Matrix<Element> {
     return Matrix<Element>.transpose(operand)
 }
 
+/// Postfix transpose operator.
 postfix operator ′
 public postfix func ′<Element>(_ operand: Matrix<Element>) -> Matrix<Element> {
     return Matrix.transpose(operand)

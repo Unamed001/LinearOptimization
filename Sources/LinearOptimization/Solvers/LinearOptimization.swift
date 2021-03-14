@@ -9,44 +9,55 @@ import Swift
 
 /// A object to describe a linar optimization problem in normal form.
 ///
-/// Describes a LOP of the form
-/// ```
-/// min c^t*x + l
-/// with A * x <= b, Aeq * x = beq
-///     and x >= 0
-/// ```
-struct LinearOptimizationProblem<F: FloatLike> {
+/// Describes a linear optimization problem of type
+/// `$$\text{min } c^Tx + \lambda \text{ with } Ax \leq b \text{ and } A_{eq}x = b_{eq} \text{ and } x \geq 0_n$$`
+///
+public struct LinearOptimizationProblem<F: FloatLike> {
     
     /// Options to control the linprog execution.
-    struct Options {
-        var verbose: Bool = true
-        var maxIterations: Int = 8
+    public struct Options {
+        /// Indicates if the solver should print results onto stdout.
+        public var verbose: Bool = true
+        
+        /// Limits the maximum number of iterations per phase of Simplex.
+        public var maxIterations: Int = 8
+        
+        /// Creates the default config for the LOP Solver.
+        public init() {}
+        
+        /// Creates a config with variable verbosity settings for the LOP Solver.
+        public init(verbose: Bool) {
+            self.verbose = verbose
+        }
     }
     
     /// A result of a linprog execution.
-    enum Result {
-        typealias Element = (x: Matrix<F>, fval: F)
-        case Ok(Element)
+    public enum Result {
+        /// A valid minima for the given LOP.
+        case Ok((x: Matrix<F>, fval: F))
+        /// An error occured with solving the LOP (or no solution found).
         case Error(String)
     }
     
-    /// A vector that describes the target function
-    var c: Matrix<F>
-    /// A constant factor of the target function
-    var l: F
+    /// The vector `$c \in \mathbb{R}^n$` that describes the target function.
+    public var c: Matrix<F>
+    /// The constant offset `$\lambda$` of the target function.
+    public var l: F
     
-    /// The matrix that describes the variable part of the <= Equations
-    var A: Matrix<F>
-    /// The vector that describes the constant port of the <= Equation
-    var b: Matrix<F>
+    /// The matrix `$A \in \mathbb{R}^{m,n} $`that describes the variable
+    /// part of the <= Equations.
+    public var A: Matrix<F>
+    /// The vector `$b \in \mathbb{R}^m$`that describes the constant
+    /// part of the <= Equation.
+    public var b: Matrix<F>
     
-    /// The matrix that describes the variable part of the = Equations
-    var Aeq: Matrix<F>
-    /// The vector that describes the constant port of the = Equation
-    var beq: Matrix<F>
+    /// The matrix `$A_{eq} \in \mathbb{R}^{p,n}$`that describes the variable part of the = Equations.
+    public var Aeq: Matrix<F>
+    /// The vector `$b_{eq} \in \mathbb{R}^p$` that describes the constant port of the = Equation.
+    public var beq: Matrix<F>
     
-    /// Construct a new LOP in NF
-    init(
+    /// Construct a new LOP in NF without offset.
+    public init(
         c: Matrix<F>,
         A: Matrix<F>,
         b: Matrix<F>,
@@ -63,8 +74,8 @@ struct LinearOptimizationProblem<F: FloatLike> {
         )
     }
     
-    /// Construct a new LOP in NF
-    init(
+    /// Construct a new LOP in NF with offset.
+    public init(
         c: Matrix<F>,
         l: F,
         A: Matrix<F>,
@@ -79,48 +90,26 @@ struct LinearOptimizationProblem<F: FloatLike> {
         self.Aeq = Aeq
         self.beq = beq
     }
-    
-    func adding(_ A: Matrix<F>, _ b: Matrix<F>) -> LinearOptimizationProblem<F> {
-        assert(self.A.cols == A.cols, "Invalid number of variables")
-        assert(b.cols == 1, "Must be Vec")
-        assert(A.rows == b.rows)
-        
-        var newA = Matrix<F>(self.A.rows + A.rows, self.A.cols)
-        newA[0..<self.A.rows, 0..<self.A.cols] = self.A
-        newA[self.A.rows..<newA.rows, 0..<self.A.cols] = A
-        
-        var newB = Matrix<F>(self.b.rows + b.rows, 1)
-        newB[0..<self.A.rows, 0...0] = self.b
-        newB[self.A.rows..<newB.rows, 0...0] = b
-        
-        return LinearOptimizationProblem<F>(
-            c: self.c,
-            l: self.l,
-            A: newA,
-            b: newB,
-            Aeq: self.Aeq,
-            beq: self.beq
-        )
-    }
 }
 
 /// A object to describe a linar optimization problem in normal form.
 ///
-/// Describes a LOP of the form
-/// ```
-/// min c^t*x + l
-/// with A * x <= b, Aeq * x = beq
-///     and x >= 0
-/// ```
-typealias LOP = LinearOptimizationProblem
+/// Describes a linear optimization problem of type
+/// `$$\text{min } c^Tx + \lambda \text{ with } Ax \leq b \text{ and } A_{eq}x = b_{eq} \text{ and } x \geq 0_n$$`
+///
+public typealias LOP = LinearOptimizationProblem
 
-func linprog<F: FloatLike>(
+///
+/// Solves the given LOP using the given options.
+///
+/// - parameter p: The LOP to be solved.
+/// - parameter opts: The run configuration of the Solver.
+/// - returns: Either a valid point or an error.
+///
+public func linprog<F: FloatLike>(
     _ p: LOP<F>,
     _ opts: LOP<F>.Options = LOP<F>.Options()
 ) -> LOP<F>.Result {
-    
-   
-    
     // Check LOP consistency
     assert(p.c.isVec)
     assert(p.A.rows == p.b.rows)
