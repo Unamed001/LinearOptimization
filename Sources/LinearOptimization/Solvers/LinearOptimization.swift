@@ -160,31 +160,32 @@ public func linprog<F: FloatLike>(
         _ pvCol: Int = -1
     ) {
         guard opts.verbose else { return }
-        print(
-            TableView(cols:
-                [
-                    [
-                        .raw(" \(phase1 ? "@" : "ß")\(iteration) | "), .fill("-") ]
-                        + nonBaseVars.map { .raw(" x\($0) | ") }
-                        + (phase1 ? [ .raw(" (H) | "), .raw(" (P) | ") ] : [ .raw(" (P) | ") ])
-                    ] +
-                    (baseVars + [ -1 ]).enumerated().map {
-                        if $1 == -1 {
-                            var col: [TableView.Primitiv] = [ .rawRight("|"), .fill("-") ]
-                            for r in 0..<matrix.rows {
-                                col.append(.rawRight("| \(matrix[r, $0].format(using: "%.4f"))"))
+        let tb = TableView(cols:
+                            [
+                                [
+                                    .raw(" \(phase1 ? "@" : "ß")\(iteration) | "), .fill("-") ]
+                                    + nonBaseVars.map { .raw(" x\($0) | ") }
+                                    + (phase1 ? [ .raw(" (H) | "), .raw(" (P) | ") ] : [ .raw(" (P) | ") ])
+                            ] +
+                            (baseVars + [ -1 ]).enumerated().map {
+                                if $1 == -1 {
+                                    var col: [TableView.Primitiv] = [ .rawRight("|"), .fill("-") ]
+                                    for r in 0..<matrix.rows {
+                                        col.append(.rawRight("| \(matrix[r, $0].format(using: "%.4f"))"))
+                                    }
+                                    return col
+                                }
+                                var col: [TableView.Primitiv] = [ .raw("x\($1) "), .fill("-") ]
+                                for r in 0..<matrix.rows {
+                                    let fstr = (r == pvRow && $0 == pvCol) ? "[%.4f]" : "%.4f"
+                                    col.append(.raw("\(matrix[r, $0].format(using: fstr)) "))
+                                }
+                                return col
                             }
-                            return col
-                        }
-                        var col: [TableView.Primitiv] = [ .raw("x\($1) "), .fill("-") ]
-                        for r in 0..<matrix.rows {
-                            let fstr = (r == pvRow && $0 == pvCol) ? "[%.4f]" : "%.4f"
-                            col.append(.raw("\(matrix[r, $0].format(using: fstr)) "))
-                        }
-                        return col
-                }
-            )
         )
+        
+        print(tb.description)
+        
     }
     
     // Phase 1
